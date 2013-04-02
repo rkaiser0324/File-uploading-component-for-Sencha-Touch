@@ -281,12 +281,23 @@ Ext.define('Ext.ux.Fileup', {
             case 'ready':                
                 me.changeState('uploading');
                 var file = me.fileElement.dom.files[0];
-                                
-                if (!me.getLoadAsDataUrl()) {
-                    me.fireEvent('uploadstart', file);
-                    me.doUpload(file);                
-                } else {
-                    me.doLoad(file);
+                if (!file.type.match('image'))
+                    Ext.device.Notification.show({
+                       title: 'Error',
+                       message: 'Please choose a photo.',
+                       buttons: Ext.MessageBox.OK,
+                       callback: function() {
+                            me.changeState('browse');
+                        }
+                   });                   
+                else
+                {
+                    if (!me.getLoadAsDataUrl()) {
+                        me.fireEvent('uploadstart', file);
+                        me.doUpload(file);                
+                    } else {
+                        me.doLoad(file);
+                    }
                 }
                 break;
         }
