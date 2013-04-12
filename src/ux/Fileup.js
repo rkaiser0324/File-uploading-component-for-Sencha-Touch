@@ -33,38 +33,38 @@
  * Default configuration below:
  * 
  
-
-items: [
-
-    //Fileup configuration for "Load local file" mode
-    {
-        xtype: 'fileupload',
-        autoUpload: true,
-        loadAsDataUrl: true,
-        states: {
-            browse: {
-                text: 'Browse and load'
-            },
-            ready: {
-                text: 'Load'
-            },
-
-            uploading: {
-                text: 'Loading',
-                loading: true// Enable loading spinner on button
-            }
-        }
-    },
-    
-    //Fileup configuration for "Upload file" mode
-    {
-        itemId: 'fileBtn',
-        xtype: 'fileupload',
-        autoUpload: false,
-        url: 'src/php/getfile.php'
-    }
-]
-
+ 
+ items: [
+ 
+ //Fileup configuration for "Load local file" mode
+ {
+ xtype: 'fileupload',
+ autoUpload: true,
+ loadAsDataUrl: true,
+ states: {
+ browse: {
+ text: 'Browse and load'
+ },
+ ready: {
+ text: 'Load'
+ },
+ 
+ uploading: {
+ text: 'Loading',
+ loading: true// Enable loading spinner on button
+ }
+ }
+ },
+ 
+ //Fileup configuration for "Upload file" mode
+ {
+ itemId: 'fileBtn',
+ xtype: 'fileupload',
+ autoUpload: false,
+ url: 'src/php/getfile.php'
+ }
+ ]
+ 
  
  * 
  */
@@ -105,14 +105,11 @@ items: [
 Ext.define('Ext.ux.Fileup', {
     extend: 'Ext.Button',
     xtype: 'fileupload',
-    
     requires: [
         'Ext.MessageBox',
         'Ext.device.Notification'
     ],
-    
     template: [
-        
         // Default button elements (do not change!)
         {
             tag: 'span',
@@ -130,14 +127,12 @@ Ext.define('Ext.ux.Fileup', {
             reference: 'textElement',
             hidden: true
         },
-        
         // Loading spinner
         {
             tag: 'div',
             className: Ext.baseCSSPrefix + 'loading-spinner',
             reference: 'loadingElement',
             hidden: true,
-            
             children: [
                 {
                     tag: 'span',
@@ -157,13 +152,11 @@ Ext.define('Ext.ux.Fileup', {
                 }
             ]
         },
-                
         // Hidden file element
         {
             tag: 'form',
             reference: 'formElement',
-            hidden: false,            
-            
+            hidden: false,
             children: [
                 {
                     tag: 'input',
@@ -177,7 +170,6 @@ Ext.define('Ext.ux.Fileup', {
             ]
         }
     ],
-    
     // Default button states config
     defaultStates: {
         browse: {
@@ -185,13 +177,11 @@ Ext.define('Ext.ux.Fileup', {
             cls: Ext.baseCSSPrefix + 'fileup',
             ui: 'filebrowse'
         },
-
         ready: {
             text: 'Upload',
             cls: Ext.baseCSSPrefix + 'fileup-ready',
             ui: 'fileready'
         },
-
         uploading: {
             text: 'Uploading',
             cls: Ext.baseCSSPrefix + 'fileup-uploading',
@@ -199,48 +189,52 @@ Ext.define('Ext.ux.Fileup', {
             loading: true
         }
     },
-    
     // Current button state
     currentState: null,
-    
     config: {
         cls: Ext.baseCSSPrefix + 'fileup',
-        
         /**
          * @cfg {String} name Input element name, check on server for $_FILES['userfile']
-         */        
+         */
         name: 'userfile',
-        
         /**
          * @cfg {Boolean} autoUpload 
          * If true then "uploading" state will start after "ready" event automatically
          */
         autoUpload: false,
-        
         /**
          * @cfg {Object} states 
          */
         states: true,
-        
         /**
          * @cfg {Boolean} loadAsDataUrl
          */
         loadAsDataUrl: false,
-        
         /**
          * @cfg {String} url URL to uploading handler script on server
          */
-        url: ''
+        url: '',
+        /**
+         * @cfg {Function} beforeFileSelection Function to call prior to displaying the native file selection picker
+         */
+        beforeFileSelection: null,
+        /**
+         * @cfg {Function} beforeUpload Function to call prior to initiating an upload
+         */
+        beforeUpload: null,
+        /**
+         * @cfg {Function} progressChanged Function to call when the upload progress has changed
+         */
+        progressChanged: null
     },
-    
     // @private
     applyStates: function(states) {
         var me = this;
-        
+
         if (states) {
-            
+
             if (Ext.isObject(states)) {
-                
+
                 // Merge custom config with default
                 return Ext.merge({}, me.defaultStates, states);
             } else {
@@ -250,51 +244,54 @@ Ext.define('Ext.ux.Fileup', {
             return me.defaultStates;
         }
     },
-    
     // @private
     initialize: function() {
         var me = this;
         me.callParent();
-        
+
         me.fileElement.dom.onchange = function() {
             me.onChanged.apply(me, arguments);
         };
-        
+
         me.on({
             scope: me,
-            buffer: 250,// Avoid multiple tap 
+            buffer: 250, // Avoid multiple tap 
             tap: me.onButtonTap
         });
-        
+
         // Stup initial button state
         me.changeState('browse');
     },
-    
     // @private
     onButtonTap: function() {
+
+        if (this.config.beforeFileSelection)
+        {
+            this.config.beforeFileSelection();
+        }
         var me = this;
-        
+
         switch (me.currentState) {
-            
+
             // Currently we handle tap event while button in ready state
             // because in all other states button is not accessible
-            case 'ready':                
+            case 'ready':
                 me.changeState('uploading');
                 var file = me.fileElement.dom.files[0];
                 if (!file.type.match('image'))
                     Ext.device.Notification.show({
-                       title: 'Error',
-                       message: 'Please choose a photo.',
-                       buttons: Ext.MessageBox.OK,
-                       callback: function() {
+                        title: 'Error',
+                        message: 'Please choose a photo.',
+                        buttons: Ext.MessageBox.OK,
+                        callback: function() {
                             me.changeState('browse');
                         }
-                   });                   
+                    });
                 else
                 {
                     if (!me.getLoadAsDataUrl()) {
                         me.fireEvent('uploadstart', file);
-                        me.doUpload(file);                
+                        me.doUpload(file);
                     } else {
                         me.doLoad(file);
                     }
@@ -302,11 +299,10 @@ Ext.define('Ext.ux.Fileup', {
                 break;
         }
     },
-    
     // @private
     onChanged: function(e) {
         var me = this;
-        
+
         if (e.target.files.length > 0) {
             me.fireAction('ready', [e.target.files[0]], function() {
                 me.changeState('ready');
@@ -322,66 +318,64 @@ Ext.define('Ext.ux.Fileup', {
             });
         }
     },
-    
     // @private
     changeState: function(state) {
         var me = this;
         var states = me.getStates();
-        
+
         if (Ext.isDefined(states[state])) {
-            
+
             // Common tasks for all states
             if (states[state].text) {
                 me.setText(states[state].text);
             } else {
                 me.setText('');
             }
-            
+
             if (states[state].cls) {
                 me.setCls(states[state].cls);
             } else {
                 me.setCls('');
             }
-            
+
             if (states[state].ui) {
                 me.setUi(states[state].ui);
             } else {
                 me.setUi('normal');
             }
-            
+
             if (states[state].loading) {
                 me.loadingElement.show();
             } else {
                 me.loadingElement.hide();
             }
-            
+
             // State specific tasks
             switch (state) {
                 case 'browse':
                     me.currentState = 'browse';
-                    me.reset();                    
+                    me.reset();
                     break;
-                    
+
                 case 'ready':
                     me.currentState = 'ready';
                     me.fileElement.hide();
-                    
+
                     if (me.getAutoUpload()) {
                         me.onButtonTap();
-                    }                    
+                    }
                     break;
-                    
+
                 case 'uploading':
                     me.currentState = 'uploading';
                     break;
             }
         } else {
             // <debug>
-            Ext.Logger.warn('Config for FileUp state "'+ state +'" not found!');
+            Ext.Logger.warn('Config for FileUp state "' + state + '" not found!');
             // </debug>
         }
     },
-    
     /**
      * @private
      * @method doLoad
@@ -391,7 +385,7 @@ Ext.define('Ext.ux.Fileup', {
      * @param {Object} file Link to loaded file element
      */
     doLoad: function(file) {
-        var me = this;                
+        var me = this;
         var reader = new FileReader();
 
         reader.onerror = function(e) {
@@ -410,7 +404,8 @@ Ext.define('Ext.ux.Fileup', {
 
                 default:
                     message = 'Can not read file';
-            };
+            }
+            ;
             me.fireEvent('loadfailure', message, this, e);
         };
 
@@ -422,7 +417,6 @@ Ext.define('Ext.ux.Fileup', {
         // Read image file
         reader.readAsDataURL(file);
     },
-    
     /**
      * @private
      * @method doUpload
@@ -430,26 +424,31 @@ Ext.define('Ext.ux.Fileup', {
      * @param {Object} file Link to loaded file element
      */
     doUpload: function(file) {
-        var me = this;        
+        var me = this;
         var http = new XMLHttpRequest();
-        
+
         if (http.upload && http.upload.addEventListener) {
-            
+
             // Uploading progress handler
             http.upload.onprogress = function(e) {
+
                 if (e.lengthComputable) {
-                    var percentComplete = (e.loaded / e.total) * 100; 
-                    me.setBadgeText(percentComplete.toFixed(0) + '%');
+                    var percentComplete = (e.loaded / e.total) * 100;
+                    if (me.config.progressChanged)
+                    {
+                        me.config.progressChanged(percentComplete.toFixed(0))
+                    }
+                    //me.setBadgeText(percentComplete.toFixed(0) + '%');
                 }
             };
-            
+
             // Response handler
-            http.onreadystatechange = function (e) {
+            http.onreadystatechange = function(e) {
                 if (this.readyState == 4) {
-                    if(this.status == 200) {
-                        
+                    if (this.status == 200) {
+
                         var response = Ext.decode(this.responseText, true)
-                        
+
                         if (response && response.success) {
                             // Success
                             me.fireEvent('success', response, this, e);
@@ -460,41 +459,45 @@ Ext.define('Ext.ux.Fileup', {
                             // Failure
                             me.fireEvent('failure', 'Unknown error', response, this, e);
                         }
-                        
+
                     } else {
-                        
+
                         // Failure
                         me.fireEvent('failure', this.status + ' ' + this.statusText, response, this, e);
                     }
-                    
+
                     me.changeState('browse');
                 }
             };
-            
+
             // Error handler
             http.upload.onerror = function(e) {
                 me.fireEvent('failure', this.status + ' ' + this.statusText, {}, this, e);
             };
         }
-        
+
+        if (this.config.beforeUpload)
+        {
+            this.config.beforeUpload();
+        }
+
         // Create FormData object
         var form = new FormData();
-        
+
         // Add selected file to form
         form.append(me.getName(), file);
-        
+
         // Send form with file using XMLHttpRequest POST request
         http.open('POST', me.getUrl());
         http.send(form);
     },
-    
     /**
      * @method reset
      * Component reset
      */
     reset: function() {
         var me = this;
-        
+
         me.setBadgeText(null);
         me.formElement.dom.reset();
         me.fileElement.show();
