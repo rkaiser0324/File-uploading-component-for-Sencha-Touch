@@ -105,10 +105,6 @@
 Ext.define('Ext.ux.Fileup', {
     extend: 'Ext.Button',
     xtype: 'fileupload',
-    requires: [
-        'Ext.MessageBox',
-        'Ext.device.Notification'
-    ],
     template: [
         // Default button elements (do not change!)
         {
@@ -279,7 +275,7 @@ Ext.define('Ext.ux.Fileup', {
                 me.changeState('uploading');
                 var file = me.fileElement.dom.files[0];
                 if (!file.type.match('image'))
-                    Ext.device.Notification.show({
+                    Ext.Msg.show({
                         title: 'Error',
                         message: 'Please choose a photo.',
                         buttons: Ext.MessageBox.OK,
@@ -308,7 +304,7 @@ Ext.define('Ext.ux.Fileup', {
                 me.changeState('ready');
             }, me);
         } else {
-            Ext.device.Notification.show({
+            Ext.Msg.show({
                 title: 'Error',
                 message: 'File selected but not accessible',
                 buttons: Ext.MessageBox.OK,
